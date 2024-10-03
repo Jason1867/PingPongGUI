@@ -19,11 +19,11 @@ class PongScoreKeeper:
         self.game_started = False  # Flag to check if the game has started
 
         # Create the GUI elements with borders
-        self.red_frame = tk.Frame(master, bg='red', bd=30, relief='raised')
+        self.red_frame = tk.Frame(master, bg='red', bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
         self.red_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.red_frame.bind('<Button-1>', self.red_frame_clicked)
 
-        self.blue_frame = tk.Frame(master, bg='blue', bd=1, relief='flat')
+        self.blue_frame = tk.Frame(master, bg='blue', bd=10, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=15)
         self.blue_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self.blue_frame.bind('<Button-1>', self.blue_frame_clicked)
 
@@ -70,8 +70,8 @@ class PongScoreKeeper:
         if not self.game_started:
             self.current_server = "red"
             self.game_started = True
-            self.red_frame.config(bd=30, relief='raised')
-            self.blue_frame.config(bd=1, relief='flat')
+            self.red_frame.config(bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
+            self.blue_frame.config(bd=10, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=15)
             self.serves = 0  # Reset serves
         else:
             self.increase_red_score(event)
@@ -82,8 +82,8 @@ class PongScoreKeeper:
         if not self.game_started:
             self.current_server = "blue"
             self.game_started = True
-            self.blue_frame.config(bd=30, relief='raised')
-            self.red_frame.config(bd=1, relief='flat')
+            self.blue_frame.config(bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
+            self.red_frame.config(bd=10, relief='sunken', highlightbackground="red", highlightcolor="red", highlightthickness=15)
             self.serves = 0  # Reset serves
         else:
             self.increase_blue_score(event)
@@ -112,12 +112,12 @@ class PongScoreKeeper:
     def toggle_server(self):
         if self.current_server == "red":
             self.current_server = "blue"
-            self.red_frame.config(bd=1, relief='flat')
-            self.blue_frame.config(bd=30, relief='raised')
+            self.red_frame.config(bd=10, relief='sunken', highlightbackground="red", highlightcolor="red", highlightthickness=15)
+            self.blue_frame.config(bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
         else:
             self.current_server = "red"
-            self.blue_frame.config(bd=1, relief='flat')
-            self.red_frame.config(bd=30, relief='raised')
+            self.blue_frame.config(bd=10, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=15)
+            self.red_frame.config(bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
         
         # Reset serves after toggling, with direction
         if self.serves > 0:
@@ -197,14 +197,14 @@ class PongScoreKeeper:
             if event.keysym in ['Left', 'q', 'a', 'z', 'w', 's', 'x', 'e', 'd', 'c', 'r', 'f', 'v', 't', 'g', 'b', '1', '2', '3', '4', '5']:
                 self.current_server = "red"
                 self.game_started = True
-                self.red_frame.config(bd=30, relief='raised')
-                self.blue_frame.config(bd=1, relief='flat')
+                self.red_frame.config(bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
+                self.blue_frame.config(bd=10, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=15)
                 self.serves = 0  # Reset serves
             elif event.keysym in ['Right', 'y', 'h', 'n', 'u', 'j', 'm', 'i', 'k', 'o', 'l', 'p', '6', '7', '8', '9', '0']:
                 self.current_server = "blue"
                 self.game_started = True
-                self.blue_frame.config(bd=30, relief='raised')
-                self.red_frame.config(bd=1, relief='flat')
+                self.blue_frame.config(bd=10, relief='sunken', highlightbackground="yellow", highlightcolor="yellow", highlightthickness=15)
+                self.red_frame.config(bd=10, relief='sunken', highlightbackground="red", highlightcolor="red", highlightthickness=15)
                 self.serves = 0  # Reset serves
         else:
             # Check for score increment keys
