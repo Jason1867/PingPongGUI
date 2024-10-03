@@ -66,5 +66,5 @@ I will be happy to help.
 
 
 # Project Structure
-- `PingPongGUI.py`: contains all the source code. 
+- `pingPong.py`: contains all the source code. 
 - `README.md`: this file.
