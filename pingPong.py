@@ -260,8 +260,8 @@ class PongScoreKeeper:
 
     def connect_to_database(self):
             """Connect to the Access database"""
-            # Update the path to your Access database file
-            db_path = r'C:\Users\exuxjas\OneDrive - Ericsson\Documents\DatabasePGUI.accdb'  # Change this to your Access DB path
+            # Update the path to your Access database file 
+            db_path = r'C:\Users\exuxjas\Documents\PingPongGUI\DatabasePGUI.accdb'  # Change this to your Access DB path
             conn_str = (
                 r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
                 f'DBQ={db_path};'
@@ -273,7 +273,7 @@ class PongScoreKeeper:
                 messagebox.showerror("Database Error", f"Error connecting to database: {e}")
                 return None
 
-    def save_final_score(self, red_score, blue_score, winner_name):
+    def save_final_score(self, red_score, blue_score, winner_name, loser_name):
             """Save the final score to the database after confirmation"""
             # Show confirmation popup
             confirm = messagebox.askyesno("Confirm", f"Do you want to save the result?\n"
@@ -287,8 +287,8 @@ class PongScoreKeeper:
                     try:
                         # Insert the game result into the table
                         cursor.execute(
-                            "INSERT INTO game_results (red_score, blue_score, winner) VALUES (?, ?, ?)",
-                            (red_score, blue_score, winner_name)
+                            "INSERT INTO game_results (red_score, blue_score, winner, loser) VALUES (?, ?, ?, ?)",
+                            (red_score, blue_score, winner_name, loser_name)
                         )
                         conn.commit()
                         print("Success! Game result saved to the database!")
@@ -311,7 +311,7 @@ class PongScoreKeeper:
 
         if control:
             # Connect to your Access database
-            conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\OneDrive - Ericsson\Documents\DatabasePGUI.accdb;')
+            conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\Documents\PingPongGUI\DatabasePGUI.accdb;')
             cursor = conn.cursor()
 
             # Check if the player already exists in the High_Scores table
@@ -344,7 +344,7 @@ class PongScoreKeeper:
     @staticmethod
     def fetch_high_scores():
         # Connect to your Access database
-        conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\OneDrive - Ericsson\Documents\DatabasePGUI.accdb;')
+        conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\Documents\PingPongGUI\DatabasePGUI.accdb;')
         cursor = conn.cursor()
 
         # Retrieve the top 5 players based on the number of wins
@@ -358,8 +358,11 @@ class PongScoreKeeper:
         # Determine the winner's name
         winner_name = self.red_name_entry.get() if winner == "red" else self.blue_name_entry.get()
 
+        # Determine the loser's name
+        loser_name = self.red_name_entry.get() if winner == "blue" else self.blue_name_entry.get()
+        
         # Save final score to the database after confirmation
-        self.control = self.save_final_score(self.red_score, self.blue_score, winner_name)
+        self.control = self.save_final_score(self.red_score, self.blue_score, winner_name, loser_name)
 
         # Update high scores in the database
         PongScoreKeeper.update_high_scores(winner_name, self.control)
