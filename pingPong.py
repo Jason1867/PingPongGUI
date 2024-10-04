@@ -23,6 +23,8 @@ class PongScoreKeeper:
         self.serves = 0  # Count serves to manage serving logic
         self.game_started = False  # Flag to check if the game has started
         self.control = False  
+        self.gif_label = None  # Initialize gif_label to None
+        self.gif_frames = []  # Initialize gif_frames to an empty list
 
         # Create the GUI elements with borders
         self.red_frame = tk.Frame(master, bg='red', bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
@@ -196,6 +198,15 @@ class PongScoreKeeper:
             self.high_scores_label.pack_forget()  # Remove the high scores label
             del self.high_scores_label  # Delete reference
 
+        # Remove GIF if it exists but do not delete it
+        if hasattr(self, 'gif_label') and self.gif_label is not None:
+            self.gif_label.pack_forget()  # Hide the GIF label
+            # You can also reset the GIF or modify it here if needed
+
+        # If you want to reset the frames list
+        if hasattr(self, 'gif_frames'):
+            self.gif_frames.clear()  # Clear the frames list to reuse later
+
     def key_pressed(self, event):
         if self.master.focus_get() in [self.red_name_entry, self.blue_name_entry]:
             return  # Ignore key presses if a text box is focused
@@ -357,10 +368,8 @@ class PongScoreKeeper:
     def show_winner(self, winner):
         # Determine the winner's name
         winner_name = self.red_name_entry.get() if winner == "red" else self.blue_name_entry.get()
-
-        # Determine the loser's name
         loser_name = self.red_name_entry.get() if winner == "blue" else self.blue_name_entry.get()
-        
+
         # Save final score to the database after confirmation
         self.control = self.save_final_score(self.red_score, self.blue_score, winner_name, loser_name)
 
@@ -369,7 +378,6 @@ class PongScoreKeeper:
 
         # Determine the winner's color and name
         winner_color = "red" if winner == "red" else "blue"
-        winner_name = self.red_name_entry.get() if winner == "red" else self.blue_name_entry.get()
 
         # Set the window's background color to match the winner's side
         self.master.config(bg=winner_color)
@@ -386,10 +394,13 @@ class PongScoreKeeper:
         self.red_frame.pack_forget()
         self.blue_frame.pack_forget()
 
+        # Display the GIF reward
+        if self.red_score == 0 or self.blue_score == 0:
+            self.show_gif_reward(winner_color, winner_name)
+
         # Fetch and display high scores
         high_scores = PongScoreKeeper.fetch_high_scores()
         high_scores_text = "Top 5 High Scores:\n"
-         # Filter out default player names from the high score display
         for idx, (player_name, wins) in enumerate(high_scores, start=1):
             if player_name not in ["LEFT PLAYER", "RIGHT PLAYER"]:
                 high_scores_text += f"{idx}. {player_name}: {wins} wins\n"
@@ -400,6 +411,30 @@ class PongScoreKeeper:
 
         # Set a flag indicating a win has occurred
         self.game_over = True
+
+    def show_gif_reward(self, winner_color, winner_name):
+        # Load the GIF
+        self.gif_frames = [tk.PhotoImage(file=r"C:\Users\exuxjas\Documents\PingPongGUI\images\jason-gif.gif", format=f"gif -index {i}") for i in range(20)]
+        
+        # Create a label to display the GIF
+        self.gif_label = tk.Label(self.master, bg=winner_color)
+        self.gif_label.pack(pady=20)
+
+        # Start the GIF animation
+        self.current_frame = 0
+        self.animate_gif()
+
+    def animate_gif(self):
+        if self.gif_frames:  # Check if gif_frames is not empty
+            # Ensure current_frame is within the bounds
+            if self.current_frame < len(self.gif_frames):
+                self.gif_label.config(image=self.gif_frames[self.current_frame])
+                self.current_frame += 1  # Move to the next frame
+            else:
+                self.current_frame = 0  # Reset to the first frame if out of bounds
+                self.gif_label.config(image=self.gif_frames[self.current_frame])  # Reset the image
+        self.gif_label.after(100, self.animate_gif)  # Schedule the next frame update
+
 
 if __name__ == "__main__":
     root = tk.Tk()
