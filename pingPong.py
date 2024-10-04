@@ -1,10 +1,11 @@
 #Current Tasks:
-#1. Save results to a database
-#2. Add 11-0 victory animation
-#3. Bug fixes: None currently
+#1. Add 11-0 victory animation
+#2. Bug/issues: N/a
+#3. Test high score functionality
 import tkinter as tk
 from tkinter import messagebox
 import time
+import pyodbc
 
 class PongScoreKeeper:
     def __init__(self, master):
@@ -21,13 +22,14 @@ class PongScoreKeeper:
         self.current_server = None  # No initial server
         self.serves = 0  # Count serves to manage serving logic
         self.game_started = False  # Flag to check if the game has started
+        self.control = False  
 
         # Create the GUI elements with borders
-        self.red_frame = tk.Frame(master, bg='red', bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+        self.red_frame = tk.Frame(master, bg='red', bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
         self.red_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.red_frame.bind('<Button-1>', self.red_frame_clicked)
 
-        self.blue_frame = tk.Frame(master, bg='blue', bd=20, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
+        self.blue_frame = tk.Frame(master, bg='blue', bd=20, relief='groove', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
         self.blue_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         self.blue_frame.bind('<Button-1>', self.blue_frame_clicked)
 
@@ -74,8 +76,8 @@ class PongScoreKeeper:
         if not self.game_started:
             self.current_server = "red"
             self.game_started = True
-            self.red_frame.config(bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
-            self.blue_frame.config(bd=20, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
+            self.red_frame.config(bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+            self.blue_frame.config(bd=20, relief='groove', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
             self.serves = 0  # Reset serves
         else:
             self.increase_red_score(event)
@@ -86,8 +88,8 @@ class PongScoreKeeper:
         if not self.game_started:
             self.current_server = "blue"
             self.game_started = True
-            self.blue_frame.config(bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
-            self.red_frame.config(bd=20, relief='sunken', highlightbackground="red", highlightcolor="red", highlightthickness=25)
+            self.blue_frame.config(bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+            self.red_frame.config(bd=20, relief='groove', highlightbackground="red", highlightcolor="red", highlightthickness=25)
             self.serves = 0  # Reset serves
         else:
             self.increase_blue_score(event)
@@ -107,21 +109,26 @@ class PongScoreKeeper:
         self.update_server()
 
     def update_server(self):
-        # Change server after every 2 serves, and allow for both increase and decrease
-        if self.serves == 2:  # Forward serves, time to toggle
+        if self.deuce_mode:
+            # In deuce mode, switch the server after every point
             self.toggle_server()
-        elif self.serves == -1:  # Reverse serves, time to toggle back
-            self.toggle_server()
+        else:
+            # Change server after every 2 serves (normal mode)
+            # Change server after every 2 serves, and allow for both increase and decrease
+            if self.serves == 2:  # Forward serves, time to toggle
+                self.toggle_server()
+            elif self.serves == -1:  # Reverse serves, time to toggle back
+                self.toggle_server()
 
     def toggle_server(self):
         if self.current_server == "red":
             self.current_server = "blue"
-            self.red_frame.config(bd=20, relief='sunken', highlightbackground="red", highlightcolor="red", highlightthickness=25)
-            self.blue_frame.config(bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+            self.red_frame.config(bd=20, relief='groove', highlightbackground="red", highlightcolor="red", highlightthickness=25)
+            self.blue_frame.config(bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
         else:
             self.current_server = "red"
-            self.blue_frame.config(bd=20, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
-            self.red_frame.config(bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+            self.blue_frame.config(bd=20, relief='groove', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
+            self.red_frame.config(bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
         
         # Reset serves after toggling, with direction
         if self.serves > 0:
@@ -184,6 +191,11 @@ class PongScoreKeeper:
             self.score_label.pack_forget()  # Remove the score label
             del self.score_label  # Delete reference
 
+        # Clear high scores display
+        if hasattr(self, 'high_scores_label'):
+            self.high_scores_label.pack_forget()  # Remove the high scores label
+            del self.high_scores_label  # Delete reference
+
     def key_pressed(self, event):
         if self.master.focus_get() in [self.red_name_entry, self.blue_name_entry]:
             return  # Ignore key presses if a text box is focused
@@ -204,14 +216,14 @@ class PongScoreKeeper:
             if event.keysym in ['Left', 'q', 'a', 'z', 'w', 's', 'x', 'e', 'd', 'c', 'r', 'f', 'v', 't', 'g', 'b', '1', '2', '3', '4', '5']:
                 self.current_server = "red"
                 self.game_started = True
-                self.red_frame.config(bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
-                self.blue_frame.config(bd=20, relief='sunken', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
+                self.red_frame.config(bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+                self.blue_frame.config(bd=20, relief='groove', highlightbackground="blue", highlightcolor="blue", highlightthickness=25)
                 self.serves = 0  # Reset serves
             elif event.keysym in ['Right', 'y', 'h', 'n', 'u', 'j', 'm', 'i', 'k', 'o', 'l', 'p', '6', '7', '8', '9', '0']:
                 self.current_server = "blue"
                 self.game_started = True
-                self.blue_frame.config(bd=20, relief='sunken', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
-                self.red_frame.config(bd=20, relief='sunken', highlightbackground="red", highlightcolor="red", highlightthickness=25)
+                self.blue_frame.config(bd=20, relief='ridge', highlightbackground="#32CD32", highlightcolor="#32CD32", highlightthickness=25)
+                self.red_frame.config(bd=20, relief='groove', highlightbackground="red", highlightcolor="red", highlightthickness=25)
                 self.serves = 0  # Reset serves
         else:
             # Check for score increment keys
@@ -246,7 +258,112 @@ class PongScoreKeeper:
             self.update_server()  # Check if server should be switched
             self.check_winner()  # Check for a winner after decreasing the score
 
+    def connect_to_database(self):
+            """Connect to the Access database"""
+            # Update the path to your Access database file
+            db_path = r'C:\Users\exuxjas\OneDrive - Ericsson\Documents\DatabasePGUI.accdb'  # Change this to your Access DB path
+            conn_str = (
+                r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
+                f'DBQ={db_path};'
+            )
+            try:
+                conn = pyodbc.connect(conn_str)
+                return conn
+            except pyodbc.Error as e:
+                messagebox.showerror("Database Error", f"Error connecting to database: {e}")
+                return None
+
+    def save_final_score(self, red_score, blue_score, winner_name):
+            """Save the final score to the database after confirmation"""
+            # Show confirmation popup
+            confirm = messagebox.askyesno("Confirm", f"Do you want to save the result?\n"
+                                                    f"Winner: {winner_name}\n"
+                                                    f"Score: {red_score} - {blue_score}")
+            if confirm:
+                # Proceed with saving to the database
+                conn = self.connect_to_database()
+                if conn:
+                    cursor = conn.cursor()
+                    try:
+                        # Insert the game result into the table
+                        cursor.execute(
+                            "INSERT INTO game_results (red_score, blue_score, winner) VALUES (?, ?, ?)",
+                            (red_score, blue_score, winner_name)
+                        )
+                        conn.commit()
+                        print("Success! Game result saved to the database!")
+                    except pyodbc.Error as e:
+                        messagebox.showerror("Database Error", f"Error saving game result: {e}")
+                    finally:
+                        cursor.close()
+                        conn.close()
+                else:
+                    messagebox.showerror("Error", "Could not connect to the database.")
+            else:
+                # User chose not to save
+                print("Cancelled. Game result not saved.")
+            return confirm
+    
+    @staticmethod
+    def update_high_scores(winner_name, control):
+        #strip name to avoid whitespace
+        winner_name = winner_name.strip()
+
+        if control:
+            # Connect to your Access database
+            conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\OneDrive - Ericsson\Documents\DatabasePGUI.accdb;')
+            cursor = conn.cursor()
+
+            # Check if the player already exists in the High_Scores table
+            cursor.execute("SELECT wins FROM High_Score WHERE player_name=?", (winner_name,))
+            row = cursor.fetchone()
+
+            if row:
+                # If the player exists, update the number of wins and last win date
+                cursor.execute(
+                    "UPDATE High_Score SET wins = wins + 1 WHERE Player_Name = ?",
+                    (winner_name)
+                )
+            else:
+                # If the player doesn't exist, insert a new record
+                cursor.execute(
+                    "INSERT INTO High_Score (player_name, wins) VALUES (?, 1)",
+                    (winner_name)
+                )
+
+            # Commit changes and close connection
+            conn.commit()
+            conn.close()
+
+            # Show confirmation message
+            print("Success! High Scores updated!")
+        else:
+            # User chose not to save
+            print("Cancelled. High Scores not updated.")
+            
+    @staticmethod
+    def fetch_high_scores():
+        # Connect to your Access database
+        conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\OneDrive - Ericsson\Documents\DatabasePGUI.accdb;')
+        cursor = conn.cursor()
+
+        # Retrieve the top 5 players based on the number of wins
+        cursor.execute("SELECT player_name, wins FROM high_score ORDER BY wins DESC")
+        high_scores = cursor.fetchmany(5)  # Fetch the top 5 results
+
+        conn.close()
+        return high_scores
+
     def show_winner(self, winner):
+        # Determine the winner's name
+        winner_name = self.red_name_entry.get() if winner == "red" else self.blue_name_entry.get()
+
+        # Save final score to the database after confirmation
+        self.control = self.save_final_score(self.red_score, self.blue_score, winner_name)
+
+        # Update high scores in the database
+        PongScoreKeeper.update_high_scores(winner_name, self.control)
+
         # Determine the winner's color and name
         winner_color = "red" if winner == "red" else "blue"
         winner_name = self.red_name_entry.get() if winner == "red" else self.blue_name_entry.get()
@@ -265,6 +382,18 @@ class PongScoreKeeper:
         # Hide the game frames
         self.red_frame.pack_forget()
         self.blue_frame.pack_forget()
+
+        # Fetch and display high scores
+        high_scores = PongScoreKeeper.fetch_high_scores()
+        high_scores_text = "Top 5 High Scores:\n"
+         # Filter out default player names from the high score display
+        for idx, (player_name, wins) in enumerate(high_scores, start=1):
+            if player_name not in ["LEFT PLAYER", "RIGHT PLAYER"]:
+                high_scores_text += f"{idx}. {player_name}: {wins} wins\n"
+
+        # Display high scores below the winner
+        self.high_scores_label = tk.Label(self.master, text=high_scores_text, font=('Helvetica', 24), bg=winner_color, fg='white')
+        self.high_scores_label.pack(pady=20)
 
         # Set a flag indicating a win has occurred
         self.game_over = True
