@@ -6,6 +6,9 @@ import tkinter as tk
 from tkinter import messagebox
 import time
 import pyodbc
+import pygame  # Add pygame import
+
+pygame.mixer.init()  # Initialize the mixer module
 
 class PongScoreKeeper:
     def __init__(self, master):
@@ -200,13 +203,17 @@ class PongScoreKeeper:
 
         # Remove GIF if it exists but do not delete it
         if hasattr(self, 'gif_label') and self.gif_label is not None:
+            # Stop the GIF animation
+            self.current_frame = 0  # Reset the frame index to the start
             self.gif_label.pack_forget()  # Hide the GIF label
+            del self.gif_label  # Delete reference
             # You can also reset the GIF or modify it here if needed
 
         # If you want to reset the frames list
         if hasattr(self, 'gif_frames'):
             self.gif_frames.clear()  # Clear the frames list to reuse later
 
+        pygame.mixer.music.stop()  # Stop the sound when the game is reset
     def key_pressed(self, event):
         if self.master.focus_get() in [self.red_name_entry, self.blue_name_entry]:
             return  # Ignore key presses if a text box is focused
@@ -272,7 +279,7 @@ class PongScoreKeeper:
     def connect_to_database(self):
             """Connect to the Access database"""
             # Update the path to your Access database file 
-            db_path = r'C:\Users\exuxjas\Documents\PingPongGUI\DatabasePGUI.accdb'  # Change this to your Access DB path
+            db_path = r'C:\Users\exuxjas\Documentss\DatabasePGUI.accdb'  # Change this to your Access DB path
             conn_str = (
                 r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
                 f'DBQ={db_path};'
@@ -322,7 +329,7 @@ class PongScoreKeeper:
 
         if control:
             # Connect to your Access database
-            conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\Documents\PingPongGUI\DatabasePGUI.accdb;')
+            conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\Documents\DatabasePGUI.accdb;')
             cursor = conn.cursor()
 
             # Check if the player already exists in the High_Scores table
@@ -355,7 +362,7 @@ class PongScoreKeeper:
     @staticmethod
     def fetch_high_scores():
         # Connect to your Access database
-        conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\Documents\PingPongGUI\DatabasePGUI.accdb;')
+        conn = pyodbc.connect(r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\Users\exuxjas\Documents\DatabasePGUI.accdb;')
         cursor = conn.cursor()
 
         # Retrieve the top 5 players based on the number of wins
@@ -414,26 +421,28 @@ class PongScoreKeeper:
 
     def show_gif_reward(self, winner_color, winner_name):
         # Load the GIF
-        self.gif_frames = [tk.PhotoImage(file=r"C:\Users\exuxjas\Documents\PingPongGUI\images\jason-gif.gif", format=f"gif -index {i}") for i in range(20)]
+        self.gif_frames = [tk.PhotoImage(file=r"C:\Users\exuxjas\Documents\PingPongGUI\media\giphy.gif", format=f"gif -index {i}") for i in range(50)]
         
         # Create a label to display the GIF
         self.gif_label = tk.Label(self.master, bg=winner_color)
         self.gif_label.pack(pady=20)
 
-        # Start the GIF animation
+        # Start the GIF animationclear
         self.current_frame = 0
         self.animate_gif()
 
+        # Play sound and set it to loop
+        pygame.mixer.music.load(r"C:\Users\exuxjas\Documents\PingPongGUI\media\victory-sound.mp3")  # Path to your sound file
+        pygame.mixer.music.play(-1)  # -1 will make the sound loop indefinitely
+
     def animate_gif(self):
-        if self.gif_frames:  # Check if gif_frames is not empty
-            # Ensure current_frame is within the bounds
-            if self.current_frame < len(self.gif_frames):
-                self.gif_label.config(image=self.gif_frames[self.current_frame])
-                self.current_frame += 1  # Move to the next frame
-            else:
-                self.current_frame = 0  # Reset to the first frame if out of bounds
-                self.gif_label.config(image=self.gif_frames[self.current_frame])  # Reset the image
-        self.gif_label.after(100, self.animate_gif)  # Schedule the next frame update
+        # Ensure gif_label exists before updating the GIF frame
+        if hasattr(self, 'gif_label'):
+            self.gif_label.config(image=self.gif_frames[self.current_frame])
+            self.current_frame = (self.current_frame + 1) % len(self.gif_frames)  # Loop back to the start
+
+            # Schedule the next frame update after a short delay
+            self.master.after(55, self.animate_gif)  # Change 100 to a suitable delay for your GIF
 
 
 if __name__ == "__main__":
